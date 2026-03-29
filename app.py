@@ -1,92 +1,154 @@
 import streamlit as st
 import time
 import math
-import struct
-import io
-import wave
-import base64
 
-st.set_page_config(page_title="数字爆炸实验室 V3.1", page_icon="🌾", layout="centered")
-
-@st.cache_data
-def get_beep_wav(freq, duration_ms, volume=0.5):
-    sample_rate = 44100
-    num_samples = int(sample_rate * (duration_ms / 1000.0))
-    buf = io.BytesIO()
-    with wave.open(buf, 'w') as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(sample_rate)
-        for i in range(num_samples):
-            t = float(i) / sample_rate
-            value = int(volume * 32767.0 * math.sin(2.0 * math.pi * freq * t))
-            env = math.exp(-t * (1000.0 / duration_ms) * 5)
-            value = int(value * env)
-            data = struct.pack('<h', value)
-            w.writeframesraw(data)
-    return buf.getvalue()
+st.set_page_config(page_title="数字合体实验室 V4.0", page_icon="🌌", layout="wide")
 
 st.markdown("""
 <style>
-    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
-    
-    [data-testid="stMetric"] {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
+    /* 星空暗黑主题深度覆盖 */
+    [data-testid="stAppViewContainer"] {
+        background-color: #080a14 !important;
+        background-image: radial-gradient(circle at 50% 10%, #1a1e36 0%, #080a14 60%);
     }
-    [data-testid="stMetricValue"] {
-        font-size: 5rem !important;
-        font-weight: 900 !important;
-        color: #2c3e50 !important;
-        text-align: center !important;
-        width: 100% !important;
+    [data-testid="stSidebar"] {
+        background-color: #0f121e !important;
     }
-    [data-testid="stMetricLabel"] {
-        font-size: 1.6rem !important;
-        font-weight: bold !important;
-        color: #7f8c8d !important;
-        text-align: center !important;
-        width: 100% !important;
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    h1, h2, h3, p, span {
+        color: #e0e7ff !important;
     }
     
-    [data-testid="column"] button {
-        height: 120px !important;
-        font-size: 1.6rem !important;
-        font-weight: 900 !important;
-        border-radius: 20px !important;
-        color: white !important;
-        border: none !important;
-        transition: transform 0.1s;
-    }
-    [data-testid="column"] button:active {
-        transform: scale(0.95);
-    }
-    
-    .alert-glow {
+    /* 容器框体边框与荧光 */
+    .lab-container {
+        border: 2px solid #1e293b;
+        background-color: rgba(15, 23, 42, 0.6);
+        border-radius: 20px;
         padding: 20px;
-        border-radius: 15px;
-        font-size: 1.5rem;
-        font-weight: bold;
-        text-align: center;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         margin-bottom: 20px;
-        animation: breath 1s infinite alternate;
     }
-    @keyframes breath {
-        from { box-shadow: 0 0 10px #fcf3cf; }
-        to { box-shadow: 0 0 30px #f39c12; }
+    .lab-title {
+        font-size: 1.5rem;
+        font-weight: 900;
+        margin-bottom: 20px;
+        text-align: center;
+        text-shadow: 0 0 10px rgba(255,255,255,0.3);
     }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-    [data-testid="column"]:nth-child(1) button { background-color: #27ae60 !important; box-shadow: 0 8px 15px rgba(39,174,96,0.3) !important; }
-    [data-testid="column"]:nth-child(2) button { background-color: #2980b9 !important; box-shadow: 0 8px 15px rgba(41,128,185,0.3) !important; }
-    [data-testid="column"]:nth-child(3) button { background-color: #8e44ad !important; box-shadow: 0 8px 15px rgba(142,68,173,0.3) !important; }
     
-    button[kind="primary"] { font-size: 1.8rem !important; font-weight: bold !important; padding: 20px !important; }
+    /* 个位：十格阵 (Ten-Frame) */
+    .ten-frame-wrapper { display: flex; flex-direction: column; gap: 15px; }
+    .ten-frame { 
+        display: grid; 
+        grid-template-columns: repeat(5, 1fr); 
+        gap: 8px; 
+        background: #111827; 
+        padding: 12px; 
+        border-radius: 12px; 
+        border: 2px solid #3b82f6; 
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); 
+    }
+    .circle { 
+        width: 35px; height: 35px; 
+        border-radius: 50%; 
+        border: 2px solid #1f2937; 
+        background: #030712; 
+        transition: all 0.3s;
+    }
+    .circle.active { 
+        background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); 
+        box-shadow: 0 0 15px #3b82f6, inset 0 0 10px #93c5fd; 
+        border: none; 
+    }
+    
+    /* 十位：能量棒 */
+    .tens-wrapper { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .energy-rod { 
+        display: flex; flex-direction: column; gap: 2px; padding: 4px; 
+        background: #111827; 
+        border-radius: 8px; 
+        border: 2px solid #f59e0b; 
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+    }
+    .rod-ball { 
+        width: 25px; height: 12px; 
+        border-radius: 6px; 
+        background: radial-gradient(ellipse at center, #fcd34d, #d97706); 
+        box-shadow: 0 0 8px #f59e0b; 
+    }
+    .rod-empty { border: 2px solid #1f2937; background: transparent; opacity: 0.3; box-shadow: none; width: 37px; height: 140px;}
+    
+    /* 百位：高能方块 */
+    .hundreds-wrapper { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+    .hundred-block { 
+        display: grid; grid-template-columns: repeat(10, 1fr); gap: 1px; padding: 4px; 
+        background: #6d28d9; 
+        border-radius: 8px; 
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); 
+        border: 2px solid #a78bfa;
+    }
+    .hundred-dot { width: 8px; height: 8px; background: #ddd6fe; border-radius: 2px; }
+    .block-empty { border: 2px solid #333; background: transparent; opacity: 0.3; width: 60px; height: 60px;}
+    
+    /* 千位：超能星体 */
+    .thousands-wrapper { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: center; height: 100%;}
+    .thousand-cube { 
+        width: 80px; height: 80px; 
+        background: radial-gradient(circle at 30% 30%, #f43f5e, #be123c); 
+        border-radius: 20px; 
+        box-shadow: 0 0 30px rgba(225, 29, 72, 0.6); 
+        display:flex; align-items:center; justify-content:center; 
+        color:white; font-size: 2.5rem; font-weight:900; 
+        transform: rotate(45deg);
+    }
+    .cube-inner { transform: rotate(-45deg); text-shadow: 0 0 10px white; }
+    
+    /* 按钮定制 Override Default Buttons */
+    button[kind="secondary"] {
+        background-color: transparent !important;
+        border: 2px solid #3b82f6 !important;
+        color: #60a5fa !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        height: 60px !important;
+        font-size: 1.2rem !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        box-shadow: 0 0 10px #3b82f6 !important;
+        color: white !important;
+    }
+    
+    .final-display {
+        text-align: center;
+        margin-top: 50px;
+        padding: 30px;
+        background: rgba(15, 23, 42, 0.8);
+        border-top: 2px solid #3b82f6;
+        border-bottom: 2px solid #3b82f6;
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+    }
+    .final-number {
+        font-size: 8rem;
+        font-weight: 900;
+        color: #60a5fa;
+        text-shadow: 0 0 20px #2563eb, 0 0 40px #3b82f6;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 0.1em;
+        margin: 0;
+    }
+    .final-label {
+        font-size: 1.5rem;
+        color: #94a3b8;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,151 +156,168 @@ if 'units' not in st.session_state: st.session_state.units = 0
 if 'tens' not in st.session_state: st.session_state.tens = 0
 if 'hundreds' not in st.session_state: st.session_state.hundreds = 0
 if 'thousands' not in st.session_state: st.session_state.thousands = 0
-if 'current_level' not in st.session_state: st.session_state.current_level = 0
-if 'level_cleared' not in st.session_state: st.session_state.level_cleared = False
-if 'sound_to_play' not in st.session_state: st.session_state.sound_to_play = None
+if 'trigger_fusion' not in st.session_state: st.session_state.trigger_fusion = None
 
-rewards = ["🐯","🐰","🐶","🦊","🐻","🐼","🐨","🦁","🐮","🐷","🐸","🐙","🦑","🦀","🐡","🐠","🐬","🐳","🦖","🦄"]
-levels = [
-    {"target": 5, "desc": "收集 5 粒碎米 🌾"},
-    {"target": 12, "desc": "装满 1 勺米 🥄，还要加上 2 粒 🌾"},
-    {"target": 20, "desc": "装满 2 勺米 🥄 (可以使用加速发勺子)"},
-    {"target": 35, "desc": "装满 3 勺米 🥄 和 5 粒米 🌾"},
-    {"target": 50, "desc": "装满半碗饭：5 勺米 🥄"},
-    {"target": 99, "desc": "快要溢出来了！装满 9 勺 🥄 和 9 粒 🌾"},
-    {"target": 100, "desc": "直接填满 1 大碗米 🍚！"},
-    {"target": 108, "desc": "注意空位：装满 1 碗米 🍚 和 8 粒米 🌾 (不需要加勺子哦)"},
-    {"target": 120, "desc": "装满 1 碗米 🍚 和 2 勺米 🥄"},
-    {"target": 250, "desc": "装满 2 碗米 🍚 和 5 勺米 🥄"},
-    {"target": 384, "desc": "多重挑战：3 碗 🍚，8 勺 🥄，4 粒 🌾"},
-    {"target": 500, "desc": "半麻袋米：装满 5 碗 🍚！"},
-    {"target": 606, "desc": "小心空缺组合：6 碗米 🍚 和 6 粒米 🌾"},
-    {"target": 777, "desc": "幸运农场主：777 (7碗，7勺，7粒)"},
-    {"target": 880, "desc": "发发发：8 碗米 🍚 和 8 勺米 🥄"},
-    {"target": 999, "desc": "极限大满贯！塞满 9碗 9勺 9粒"},
-    {"target": 1000, "desc": "大升级！突破容量获得 1 大袋装米 🎒！"},
-    {"target": 1005, "desc": "1 大袋装米 🎒 和 5 粒碎米 🌾"},
-    {"target": 1250, "desc": "大进货：1 大袋 🎒，2 碗 🍚，5 勺 🥄"},
-    {"target": 2026, "desc": "神秘口令：2026 (2袋，0碗，2勺，6粒)"},
-]
-for i in range(20):
-    levels[i]['reward'] = rewards[i]
+def render_units(n):
+    frames = max(1, math.ceil(n / 10))
+    if n == 0: frames = 1
+    html = "<div class='ten-frame-wrapper'>"
+    drawn = 0
+    for _ in range(frames):
+        html += "<div class='ten-frame'>"
+        for _ in range(10):
+            c = "circle active" if drawn < n else "circle"
+            html += f"<div class='{c}'></div>"
+            drawn += 1
+        html += "</div>"
+    html += "</div>"
+    return html
 
-def add_units(): 
+def render_tens(n):
+    html = "<div class='tens-wrapper'>"
+    if n == 0:
+        html += "<div class='energy-rod rod-empty'></div>"
+    else:
+        for _ in range(n):
+            html += "<div class='energy-rod'>" + ("<div class='rod-ball'></div>"*10) + "</div>"
+    html += "</div>"
+    return html
+
+def render_hundreds(n):
+    html = "<div class='hundreds-wrapper'>"
+    if n == 0:
+        html += "<div class='block-empty'></div>"
+    else:
+        for _ in range(n):
+            html += "<div class='hundred-block'>" + ("<div class='hundred-dot'></div>"*100) + "</div>"
+    html += "</div>"
+    return html
+
+def render_thousands(n):
+    html = "<div class='thousands-wrapper'>"
+    if n == 0:
+        html += "<div class='thousand-cube' style='opacity:0.1; background:transparent; border:2px dashed #555; box-shadow:none;'><div class='cube-inner'>0</div></div>"
+    else:
+        for _ in range(n):
+            html += "<div class='thousand-cube'><div class='cube-inner'>1k</div></div>"
+    html += "</div>"
+    return html
+
+def add_units():
     st.session_state.units += 1
-    st.session_state.sound_to_play = (800, 150)
-def add_tens(): 
+    if st.session_state.units >= 10:
+        st.session_state.trigger_fusion = 'units'
+
+def add_tens():
     st.session_state.tens += 1
-    st.session_state.sound_to_play = (400, 150)
-def add_hundreds(): 
+    if st.session_state.tens >= 10:
+        st.session_state.trigger_fusion = 'tens'
+
+def add_hundreds():
     st.session_state.hundreds += 1
-    st.session_state.sound_to_play = (150, 300)
-    
+    if st.session_state.hundreds >= 10:
+        st.session_state.trigger_fusion = 'hundreds'
+
+def break_tens():
+    if st.session_state.tens > 0:
+        st.session_state.tens -= 1
+        st.session_state.units += 10
+        st.toast("💥 十位棒断裂散成了10个等离子球！", icon="⚠️")
+
+def break_hundreds():
+    if st.session_state.hundreds > 0:
+        st.session_state.hundreds -= 1
+        st.session_state.tens += 10
+        st.toast("💥 百位块瓦解成了10根能量棒！", icon="⚠️")
+
+def break_thousands():
+    if st.session_state.thousands > 0:
+        st.session_state.thousands -= 1
+        st.session_state.hundreds += 10
+        st.toast("💥 核心降维成了10块高能方块！", icon="⚠️")
+
 def reset():
     st.session_state.units = 0
     st.session_state.tens = 0
     st.session_state.hundreds = 0
     st.session_state.thousands = 0
-    st.session_state.level_cleared = False
-    st.session_state.sound_to_play = None
-
-if st.session_state.sound_to_play:
-    freq, dur = st.session_state.sound_to_play
-    wav_bytes = get_beep_wav(freq, dur)
-    b64 = base64.b64encode(wav_bytes).decode('utf-8')
-    # Use time.time() to force React to remount the audio element every click
-    md = f'<audio autoplay="true" class="audio-{time.time()}" style="display:none;"><source src="data:audio/wav;base64,{b64}" type="audio/wav"></audio>'
-    st.markdown(md, unsafe_allow_html=True)
-    st.session_state.sound_to_play = None
+    st.session_state.trigger_fusion = None
 
 with st.sidebar:
-    st.markdown("<h2 style='text-align:center;'>🎯 大米搬运工坊</h2>", unsafe_allow_html=True)
+    st.title("🛰️ 重力控制台")
     st.markdown("---")
-    
-    if st.session_state.current_level < 20:
-        lvl = levels[st.session_state.current_level]
-        st.markdown(f"""
-        <div style='background-color:#fff3cd; padding:15px; border-radius:15px; text-align:center; border: 3px solid #ffecb5; margin-bottom:20px;'>
-            <h3 style='color:#856404; margin-top:0;'>第 {st.session_state.current_level + 1}/20 关：</h3>
-            <p style='font-size:1.3rem; font-weight:bold; color:#d32f2f; line-height:1.5;'>{lvl['desc']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.success("🎉 你已经打通了所有关卡！你是不可思议的大农场主！")
-        
-    st.button("🧹 倒空所有大米重来", use_container_width=True, on_click=reset, type="primary")
+    st.button("🧹 重置星空实验室", use_container_width=True, on_click=reset, type="primary")
+    st.markdown("<p style='color:#64748b; font-size:1rem; margin-top: 20px; line-height: 1.6;'><b>逆向思维课：</b><br>试着点击 💥拆解 高级能量块，观察低级网格会发生什么！请数一数拆解后留下的光球有几个？</p>", unsafe_allow_html=True)
 
-alert_placeholder = st.empty()
+st.markdown("<h1 style='text-align:center; color:#60a5fa; text-shadow:0 0 15px #2563eb;'>🌌 数字合体实验室 V4.0</h1>", unsafe_allow_html=True)
+
+if st.session_state.trigger_fusion == 'units':
+    st.toast("⚡ 检测到十格阵充能100%！执行合体压缩...", icon="🧬")
+    time.sleep(0.5)
+    st.balloons()
+    st.session_state.units -= 10
+    st.session_state.tens += 1
+    st.session_state.trigger_fusion = None
+    st.rerun()
+elif st.session_state.trigger_fusion == 'tens':
+    st.toast("⚡ 10根能量棒充能完毕！聚合为高能方块...", icon="🧲")
+    time.sleep(0.5)
+    st.snow()
+    st.session_state.tens -= 10
+    st.session_state.hundreds += 1
+    st.session_state.trigger_fusion = None
+    st.rerun()
+elif st.session_state.trigger_fusion == 'hundreds':
+    st.toast("⚡ 10个高能方块临界质变！演化为千位星体...", icon="☄️")
+    time.sleep(0.8)
+    st.balloons()
+    st.snow()
+    st.session_state.hundreds -= 10
+    st.session_state.thousands += 1
+    st.session_state.trigger_fusion = None
+    st.rerun()
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("千位米袋 🎒", st.session_state.thousands)
-col2.metric("百位米碗 🍚", st.session_state.hundreds)
-col3.metric("十位米勺 🥄", st.session_state.tens)
-col4.metric("个位米粒 🌾", st.session_state.units)
 
-carry_in_progress = False
-
-if st.session_state.units >= 10:
-    carry_in_progress = True
-    st.toast("💥 能量聚变！10粒大米合体！", icon="💥")
-    alert_placeholder.markdown("<div class='alert-glow' style='background-color:#eafaf1; color:#145a32; border:3px solid #27ae60;'>🚨 盘子装不下了！10 粒大米正在变成 1 勺大米...</div>", unsafe_allow_html=True)
-    time.sleep(1.2)
-    st.session_state.tens += st.session_state.units // 10
-    st.session_state.units = st.session_state.units % 10
-    st.rerun()
-
-elif st.session_state.tens >= 10:
-    carry_in_progress = True
-    st.toast("🍚 勺子装不下！10勺大米合体！", icon="📦")
-    alert_placeholder.markdown("<div class='alert-glow' style='background-color:#ebf5fb; color:#154360; border:3px solid #2980b9;'>🚧 勺子装满了！10 勺大米正在倒进 1 个大碗里...</div>", unsafe_allow_html=True)
-    st.balloons()
-    time.sleep(1.5)
-    st.session_state.hundreds += st.session_state.tens // 10
-    st.session_state.tens = st.session_state.tens % 10
-    st.rerun()
-
-elif st.session_state.hundreds >= 10:
-    carry_in_progress = True
-    st.toast("🎒 碗装不下了！10碗大米装袋！", icon="🏭")
-    alert_placeholder.markdown("<div class='alert-glow' style='background-color:#f4ecf7; color:#512e5f; border:3px solid #8e44ad;'>🏗️ 大碗溢出了！10 碗大米正在装进 1 个巨大的麻袋...</div>", unsafe_allow_html=True)
-    st.snow()
-    time.sleep(1.8)
-    st.session_state.thousands += st.session_state.hundreds // 10
-    st.session_state.hundreds = st.session_state.hundreds % 10
-    st.rerun()
-
-if not carry_in_progress and st.session_state.current_level < 20 and not st.session_state.level_cleared:
-    target = levels[st.session_state.current_level]['target']
-    current_val = st.session_state.thousands * 1000 + st.session_state.hundreds * 100 + st.session_state.tens * 10 + st.session_state.units
-    if current_val == target:
-        st.session_state.level_cleared = True
-        st.rerun()
-
-if st.session_state.level_cleared:
-    st.balloons()
-    em = levels[st.session_state.current_level]['reward']
-    st.markdown(f"""
-    <div style='text-align:center; padding: 15px; background-color: #fffaf0; border-radius: 20px; border: 4px dashed #f39c12; margin-top:5px; margin-bottom:5px; box-shadow: 0 5px 10px rgba(0,0,0,0.1);'>
-        <h1 style='font-size: 5rem; margin:0;'>{em}</h1>
-        <h2 style='color:#e67e22; font-size: 1.6rem; font-weight: 900; margin-top:10px; margin-bottom:0;'>🎉 绝妙！印章奖励入场！</h2>
-    </div>
-    """, unsafe_allow_html=True)
+with col4:
+    st.markdown("<div class='lab-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-title' style='color:#60a5fa;'>✨ 个位舱 (Units)</div>", unsafe_allow_html=True)
+    st.markdown(render_units(st.session_state.units), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    def claim_reward():
-        st.session_state.sound_to_play = (500, 300) 
-        st.session_state.current_level += 1
-        st.session_state.units = 0
-        st.session_state.tens = 0
-        st.session_state.hundreds = 0
-        st.session_state.thousands = 0
-        st.session_state.level_cleared = False
-        
-    st.button("➡️ 把它收进书包，挑战下一关！", type="primary", use_container_width=True, on_click=claim_reward)
+    st.button("✨ 充能 (+1)", use_container_width=True, on_click=add_units)
+
+with col3:
+    st.markdown("<div class='lab-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-title' style='color:#fbbf24;'>⚡ 十位舱 (Tens)</div>", unsafe_allow_html=True)
+    st.markdown(render_tens(st.session_state.tens), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     
-elif not st.session_state.level_cleared:
-    st.write("---")
-    st.markdown("<h3 style='text-align:center; color:#7f8c8d; margin-bottom: 20px;'>👇 大米搬运操作台</h3>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="large")
-    with c1: st.button("🌾 发射 1 粒", use_container_width=True, on_click=add_units)
-    with c2: st.button("🥄 放 1 勺", use_container_width=True, on_click=add_tens)
-    with c3: st.button("🍚 放 1 碗", use_container_width=True, on_click=add_hundreds)
+    st.button("⚡ 聚合 (+10)", use_container_width=True, on_click=add_tens)
+    st.button("💥 拆解一层 (-10)", use_container_width=True, on_click=break_tens)
+
+with col2:
+    st.markdown("<div class='lab-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-title' style='color:#a78bfa;'>🧲 百位舱 (Hundreds)</div>", unsafe_allow_html=True)
+    st.markdown(render_hundreds(st.session_state.hundreds), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.button("🧲 聚合 (+100)", use_container_width=True, on_click=add_hundreds)
+    st.button("💥 打碎方块 (-100)", use_container_width=True, on_click=break_hundreds)
+
+with col1:
+    st.markdown("<div class='lab-container'>", unsafe_allow_html=True)
+    st.markdown("<div class='lab-title' style='color:#fb7185;'>☄️ 千位核心 (Thousands)</div>", unsafe_allow_html=True)
+    st.markdown(render_thousands(st.session_state.thousands), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.button("☄️ 聚合 (+1000)", use_container_width=True, on_click=lambda: st.session_state.update(thousands=st.session_state.thousands+1))
+    st.button("💥 核心降维 (-1000)", use_container_width=True, on_click=break_thousands)
+
+abstract_number = st.session_state.thousands * 1000 + st.session_state.hundreds * 100 + st.session_state.tens * 10 + st.session_state.units
+
+st.markdown(f"""
+<div class='final-display'>
+    <div class='final-label'>SUPERNOVA MATRIX RESULT</div>
+    <div class='final-number'>{abstract_number}</div>
+</div>
+""", unsafe_allow_html=True)
