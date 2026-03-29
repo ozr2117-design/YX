@@ -217,12 +217,4 @@ with col_main:
     with c3: 
         st.button("🔴 点击 1 次 🔮", use_container_width=True, on_click=on_add_1, type="primary")
 
-st.markdown(f"""
-<div class='password-area'>
-    <h2 style='color:#333; margin-top:0;'>✍️【新任务】书写最终通关密码</h2>
-    <p style='font-size:1.3rem; color:#666; font-weight:bold;'>小指挥官，请在你的本子上抄下这段最终密码，然后大声宣读出来交给图图老师吧！</p>
-    <div class='password-digits'>
-        {st.session_state.thousands} {st.session_state.hundreds} {st.session_state.tens} {st.session_state.units}
-    </div>
-</div>
-""", unsafe_allow_html=True)
+
