@@ -108,7 +108,7 @@ def reset():
     st.session_state.level_cleared = False
 
 with st.sidebar:
-    st.markdown("<h2 style='text-align:center;'>🎯 大米工坊通缉令</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>🎯 大米搬运工坊</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     if st.session_state.current_level < 20:
@@ -199,6 +199,6 @@ elif not st.session_state.level_cleared:
     st.write("---")
     st.markdown("<h3 style='text-align:center; color:#7f8c8d; margin-bottom: 20px;'>👇 大米搬运操作台</h3>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3, gap="large")
-    with c1: st.button("➕ 发射 1 粒", use_container_width=True, on_click=add_units)
-    with c2: st.button("⏩ 放 1 勺", use_container_width=True, on_click=add_tens)
-    with c3: st.button("⚡ 放 1 碗", use_container_width=True, on_click=add_hundreds)
+    with c1: st.button("🌾 发射 1 粒", use_container_width=True, on_click=add_units)
+    with c2: st.button("🥄 放 1 勺", use_container_width=True, on_click=add_tens)
+    with c3: st.button("🍚 放 1 碗", use_container_width=True, on_click=add_hundreds)
