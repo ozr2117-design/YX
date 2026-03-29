@@ -30,17 +30,25 @@ st.markdown("""
 <style>
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     
+    [data-testid="stMetric"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
     [data-testid="stMetricValue"] {
         font-size: 5rem !important;
         font-weight: 900 !important;
         color: #2c3e50 !important;
-        text-align: center;
+        text-align: center !important;
+        width: 100% !important;
     }
     [data-testid="stMetricLabel"] {
-        font-size: 1.3rem !important;
+        font-size: 1.6rem !important;
         font-weight: bold !important;
         color: #7f8c8d !important;
-        text-align: center;
+        text-align: center !important;
+        width: 100% !important;
     }
     
     [data-testid="column"] button {
@@ -138,7 +146,8 @@ if st.session_state.sound_to_play:
     freq, dur = st.session_state.sound_to_play
     wav_bytes = get_beep_wav(freq, dur)
     b64 = base64.b64encode(wav_bytes).decode('utf-8')
-    md = f'<audio autoplay="true" style="display:none;"><source src="data:audio/wav;base64,{b64}" type="audio/wav"></audio>'
+    # Use time.time() to force React to remount the audio element every click
+    md = f'<audio autoplay="true" class="audio-{time.time()}" style="display:none;"><source src="data:audio/wav;base64,{b64}" type="audio/wav"></audio>'
     st.markdown(md, unsafe_allow_html=True)
     st.session_state.sound_to_play = None
 
