@@ -1,12 +1,34 @@
 import streamlit as st
 import time
+import math
+import struct
+import io
+import wave
+import base64
 
-st.set_page_config(page_title="数字爆炸实验室 V3.0", page_icon="🌾", layout="centered")
+st.set_page_config(page_title="数字爆炸实验室 V3.1", page_icon="🌾", layout="centered")
+
+@st.cache_data
+def get_beep_wav(freq, duration_ms, volume=0.5):
+    sample_rate = 44100
+    num_samples = int(sample_rate * (duration_ms / 1000.0))
+    buf = io.BytesIO()
+    with wave.open(buf, 'w') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        for i in range(num_samples):
+            t = float(i) / sample_rate
+            value = int(volume * 32767.0 * math.sin(2.0 * math.pi * freq * t))
+            env = math.exp(-t * (1000.0 / duration_ms) * 5)
+            value = int(value * env)
+            data = struct.pack('<h', value)
+            w.writeframesraw(data)
+    return buf.getvalue()
 
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
-    .main-title { text-align: center; color: #e67e22; font-size: 3.5rem; font-weight: 900; margin-bottom: 2rem; text-shadow: 2px 2px 0px #fcf3cf; }
     
     [data-testid="stMetricValue"] {
         font-size: 5rem !important;
@@ -34,7 +56,6 @@ st.markdown("""
         transform: scale(0.95);
     }
     
-    /* 强光高亮效果提示框 */
     .alert-glow {
         padding: 20px;
         border-radius: 15px;
@@ -51,14 +72,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Custom colors for Rice Theme buttons (Green, Blue, Purple)
 st.markdown("""
 <style>
     [data-testid="column"]:nth-child(1) button { background-color: #27ae60 !important; box-shadow: 0 8px 15px rgba(39,174,96,0.3) !important; }
     [data-testid="column"]:nth-child(2) button { background-color: #2980b9 !important; box-shadow: 0 8px 15px rgba(41,128,185,0.3) !important; }
     [data-testid="column"]:nth-child(3) button { background-color: #8e44ad !important; box-shadow: 0 8px 15px rgba(142,68,173,0.3) !important; }
     
-    /* 领奖按钮的全局样式放大（不受分栏限制） */
     button[kind="primary"] { font-size: 1.8rem !important; font-weight: bold !important; padding: 20px !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -69,6 +88,7 @@ if 'hundreds' not in st.session_state: st.session_state.hundreds = 0
 if 'thousands' not in st.session_state: st.session_state.thousands = 0
 if 'current_level' not in st.session_state: st.session_state.current_level = 0
 if 'level_cleared' not in st.session_state: st.session_state.level_cleared = False
+if 'sound_to_play' not in st.session_state: st.session_state.sound_to_play = None
 
 rewards = ["🐯","🐰","🐶","🦊","🐻","🐼","🐨","🦁","🐮","🐷","🐸","🐙","🦑","🦀","🐡","🐠","🐬","🐳","🦖","🦄"]
 levels = [
@@ -93,19 +113,34 @@ levels = [
     {"target": 1250, "desc": "大进货：1 大袋 🎒，2 碗 🍚，5 勺 🥄"},
     {"target": 2026, "desc": "神秘口令：2026 (2袋，0碗，2勺，6粒)"},
 ]
-
 for i in range(20):
     levels[i]['reward'] = rewards[i]
 
-def add_units(): st.session_state.units += 1
-def add_tens(): st.session_state.tens += 1
-def add_hundreds(): st.session_state.hundreds += 1
+def add_units(): 
+    st.session_state.units += 1
+    st.session_state.sound_to_play = (800, 150)
+def add_tens(): 
+    st.session_state.tens += 1
+    st.session_state.sound_to_play = (400, 150)
+def add_hundreds(): 
+    st.session_state.hundreds += 1
+    st.session_state.sound_to_play = (150, 300)
+    
 def reset():
     st.session_state.units = 0
     st.session_state.tens = 0
     st.session_state.hundreds = 0
     st.session_state.thousands = 0
     st.session_state.level_cleared = False
+    st.session_state.sound_to_play = None
+
+if st.session_state.sound_to_play:
+    freq, dur = st.session_state.sound_to_play
+    wav_bytes = get_beep_wav(freq, dur)
+    b64 = base64.b64encode(wav_bytes).decode('utf-8')
+    md = f'<audio autoplay="true" style="display:none;"><source src="data:audio/wav;base64,{b64}" type="audio/wav"></audio>'
+    st.markdown(md, unsafe_allow_html=True)
+    st.session_state.sound_to_play = None
 
 with st.sidebar:
     st.markdown("<h2 style='text-align:center;'>🎯 大米搬运工坊</h2>", unsafe_allow_html=True)
@@ -123,8 +158,6 @@ with st.sidebar:
         st.success("🎉 你已经打通了所有关卡！你是不可思议的大农场主！")
         
     st.button("🧹 倒空所有大米重来", use_container_width=True, on_click=reset, type="primary")
-
-st.markdown("<p class='main-title'>🌾 大米进化工坊</p>", unsafe_allow_html=True)
 
 alert_placeholder = st.empty()
 
@@ -165,7 +198,6 @@ elif st.session_state.hundreds >= 10:
     st.session_state.hundreds = st.session_state.hundreds % 10
     st.rerun()
 
-# 当进位动画彻底结束后，才做胜负结算
 if not carry_in_progress and st.session_state.current_level < 20 and not st.session_state.level_cleared:
     target = levels[st.session_state.current_level]['target']
     current_val = st.session_state.thousands * 1000 + st.session_state.hundreds * 100 + st.session_state.tens * 10 + st.session_state.units
@@ -184,6 +216,7 @@ if st.session_state.level_cleared:
     """, unsafe_allow_html=True)
     
     def claim_reward():
+        st.session_state.sound_to_play = (500, 300) 
         st.session_state.current_level += 1
         st.session_state.units = 0
         st.session_state.tens = 0
