@@ -177,13 +177,11 @@ if st.session_state.level_cleared:
     st.balloons()
     em = levels[st.session_state.current_level]['reward']
     st.markdown(f"""
-    <div style='text-align:center; padding: 40px; background-color: #fffaf0; border-radius: 30px; border: 6px dashed #f39c12; margin-top:20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);'>
-        <h1 style='font-size: 8rem; margin:0;'>{em}</h1>
-        <h2 style='color:#e67e22; font-size: 2.2rem; font-weight: 900; margin-top:20px;'>绝妙！奖励稀有动物印章一枚！</h2>
+    <div style='text-align:center; padding: 15px; background-color: #fffaf0; border-radius: 20px; border: 4px dashed #f39c12; margin-top:5px; margin-bottom:5px; box-shadow: 0 5px 10px rgba(0,0,0,0.1);'>
+        <h1 style='font-size: 5rem; margin:0;'>{em}</h1>
+        <h2 style='color:#e67e22; font-size: 1.6rem; font-weight: 900; margin-top:10px; margin-bottom:0;'>🎉 绝妙！印章奖励入场！</h2>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.write("")
     
     def claim_reward():
         st.session_state.current_level += 1
