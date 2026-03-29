@@ -31,8 +31,24 @@ st.markdown("""
     .carry-arrow { font-size: 1.8rem; font-weight: bold; }
     .carry-1 { font-size: 1.8rem; text-align: center;}
     .sub-num { font-size: 1rem; color: #666; font-weight: bold; }
+    
+    .level-card { background-color:#fff3cd; padding:15px; border-radius:15px; border: 4px solid #ffecb5; margin-bottom: 20px; text-align:center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .level-success { background-color:#d4edda; padding:15px; border-radius:15px; border: 4px solid #c3e6cb; margin-bottom: 20px; text-align:center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 </style>
 """, unsafe_allow_html=True)
+
+levels = [
+    {"u":0, "t":1, "h":0, "th":0, "clear": True, "desc": "魔法初现：获得你的第一条鲸鱼 🐳<br><span style='font-size:1rem;color:gray;'>(一直发射能量球就能见证爆炸)</span>"},
+    {"u":2, "t":1, "h":0, "th":0, "clear": True, "desc": "拼图入门：变出 1 条鲸鱼 🐳 + 2 个苹果 🍏"},
+    {"u":0, "t":2, "h":0, "th":0, "clear": True, "desc": "捷径法术：变出 2 条鲸鱼 🐳<br><span style='font-size:1rem;color:gray;'>(用大大的🚀按钮试试)</span>"},
+    {"u":5, "t":3, "h":0, "th":0, "clear": True, "desc": "灵活搭配：变出 3 条鲸鱼 🐳 + 5 个苹果 🍏"},
+    {"u":0, "t":5, "h":0, "th":0, "clear": True, "desc": "一半的百位：凑齐 5 条鲸鱼 🐳"},
+    {"u":9, "t":9, "h":0, "th":0, "clear": False, "desc": "大爆炸前夕：铺满 9 条鲸鱼 🐳 + 9 个苹果 🍏<br><span style='font-size:1rem;color:gray;'>(马上就有奇观发生了！)</span>"},
+    {"u":0, "t":0, "h":1, "th":0, "clear": True, "desc": "🌋召唤仪式：【别清空！】就在刚才的基础上再发射 1 个，见证变出大橘子 🍊！"},
+    {"u":8, "t":0, "h":1, "th":0, "clear": True, "desc": "缺位的谜团：1 个大橘子 🍊 + 8 个苹果 🍏<br><span style='font-size:1rem;color:gray;'>(注意避开鲸鱼哦)</span>"},
+    {"u":0, "t":5, "h":2, "th":0, "clear": True, "desc": "三位大拼图：2 个大橘子 🍊 + 5 条鲸鱼 🐳"},
+    {"u":0, "t":0, "h":0, "th":1, "clear": True, "desc": "🌌终极密码：使用下面靶子上的【直接发射】，一口气输入超级数字召唤紫葡萄 🍇！"},
+]
 
 if 'units' not in st.session_state: st.session_state.units = 0
 if 'tens' not in st.session_state: st.session_state.tens = 0
@@ -40,6 +56,8 @@ if 'hundreds' not in st.session_state: st.session_state.hundreds = 0
 if 'thousands' not in st.session_state: st.session_state.thousands = 0
 if 'logs' not in st.session_state: st.session_state.logs = []
 if 'message' not in st.session_state: st.session_state.message = None
+if 'current_level' not in st.session_state: st.session_state.current_level = 0
+if 'level_just_cleared' not in st.session_state: st.session_state.level_just_cleared = False
 
 def get_emoji(level):
     if level == 1: return "🍏"
@@ -108,6 +126,16 @@ def process_energy(amount):
         add_log(html_for_carry(100, 1000))
         carry_happened = True
         
+    if st.session_state.current_level < len(levels) and not st.session_state.level_just_cleared:
+        goal = levels[st.session_state.current_level]
+        if (st.session_state.units == goal['u'] and 
+            st.session_state.tens == goal['t'] and 
+            st.session_state.hundreds == goal['h'] and 
+            st.session_state.thousands == goal['th']):
+            st.session_state.level_just_cleared = True
+            st.session_state.message = None
+            return
+
     if carry_happened:
         st.session_state.message = ("success", "✨ 发生了一连串进位大融合！快向左看图形战报！")
     else:
@@ -137,11 +165,22 @@ with col_left:
 
 with col_right:
     st.markdown("<p class='main-title'>🌟 数字融合实验室 🌟</p>", unsafe_allow_html=True)
-
-    if st.session_state.message:
-        msg_type, text = st.session_state.message
-        if msg_type == "success": st.success(text)
-        else: st.info(text)
+    
+    if st.session_state.current_level < len(levels):
+        goal = levels[st.session_state.current_level]
+        st.markdown(f"""
+        <div class='level-card'>
+            <h3 style='color:#856404; margin-top:0;'>🏆 闯关任务 (第 {st.session_state.current_level + 1} 关 / 共 10 关)</h3>
+            <p style='font-size:1.5rem; font-weight:bold; margin-bottom:0;'>目标：{goal['desc']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class='level-success'>
+            <h3 style='color:#155724; margin-top:0;'>👑 究极融合之皇！通关啦！</h3>
+            <p style='font-size:1.5rem; font-weight:bold; margin-bottom:0;'>所有的十进制魔法拼图都被你解开了！</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.markdown(f"<div class='digit-box thousand-box'><div class='digit-label'>【千】🍇</div><div class='digit-value'>{st.session_state.thousands}</div></div>", unsafe_allow_html=True)
@@ -149,15 +188,33 @@ with col_right:
     with col3: st.markdown(f"<div class='digit-box ten-box'><div class='digit-label'>【十】🐳</div><div class='digit-value'>{st.session_state.tens}</div></div>", unsafe_allow_html=True)
     with col4: st.markdown(f"<div class='digit-box unit-box'><div class='digit-label'>【个】🍏</div><div class='digit-value'>{st.session_state.units}</div></div>", unsafe_allow_html=True)
 
-    st.write("---")
+    if st.session_state.level_just_cleared:
+        st.balloons()
+        st.success("🎉 太棒啦！你完美拼出了任务要求的图案图案！")
+        def next_lvl():
+            if levels[st.session_state.current_level]['clear']:
+                st.session_state.units = 0
+                st.session_state.tens = 0
+                st.session_state.hundreds = 0
+                st.session_state.thousands = 0
+                st.session_state.logs = []
+            st.session_state.current_level += 1
+            st.session_state.level_just_cleared = False
+        st.button("🎁 领取奖励，点击挑战下一关！", type="primary", use_container_width=True, on_click=next_lvl)
+    else:
+        if st.session_state.message:
+            msg_type, text = st.session_state.message
+            if msg_type == "success": st.success(text)
+            else: st.info(text)
 
-    st.subheader("🎮 魔法控制台")
-    c1, c2, c3 = st.columns([1, 1, 2])
-    with c1: st.button("👆 发射 1 个🍏", use_container_width=True, on_click=on_add_1, type="primary")
-    with c2: st.button("🚀 发射 10 个🍏", use_container_width=True, on_click=on_add_10, type="primary")
-    with c3:
-        col_input, col_btn = st.columns([2, 1])
-        with col_input: st.number_input("想要多少个🍏？", min_value=1, max_value=9999, value=15, step=1, label_visibility="collapsed", key="custom_amount_input")
-        with col_btn: st.button("🎯 直接发射！", use_container_width=True, on_click=on_add_custom)
-
-    st.button("🧹 重置并清空实验室", use_container_width=True, on_click=on_reset, type="secondary")
+        st.write("---")
+        st.subheader("🎮 魔法控制台")
+        c1, c2, c3 = st.columns([1, 1, 2])
+        with c1: st.button("👆 发射 1 个🍏", use_container_width=True, on_click=on_add_1, type="primary")
+        with c2: st.button("🚀 发射 10 个🍏", use_container_width=True, on_click=on_add_10, type="primary")
+        with c3:
+            col_input, col_btn = st.columns([2, 1])
+            with col_input: st.number_input("想要多少个🍏？", min_value=1, max_value=9999, value=15, step=1, label_visibility="collapsed", key="custom_amount_input")
+            with col_btn: st.button("🎯 直接发射！", use_container_width=True, on_click=on_add_custom)
+            
+        st.button("🧹 重置并清空实验室", use_container_width=True, on_click=on_reset, type="secondary")
